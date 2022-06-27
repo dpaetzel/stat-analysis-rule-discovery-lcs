@@ -23,7 +23,8 @@ matplotlib.rcParams['ps.fonttype'] = 42
 
 dname = "RD"
 suffix = ".csv"
-latex = False
+
+metrics = ["test_mean_squared_error", "elitist_complexity"]
 
 
 def list_from_ls(dname):
@@ -36,6 +37,38 @@ def list_from_ls(dname):
     # Remove last element since that is an empty string always due to `ls`'s
     # final newline.
     return proc.stdout.decode().split("\n")[:-1]
+
+
+def load_data():
+    algorithm_names = list_from_ls(dname)
+    print(algorithm_names)
+
+    task_names = [
+        n.removesuffix(suffix)
+        for n in list_from_ls(f"{dname}/{algorithm_names[0]}")
+        if n != f"summary{suffix}"
+    ]
+
+    dfs = []
+    keys = []
+    for algorithm_name in algorithm_names:
+        for task_name in task_names:
+            df = pd.read_csv(f"{dname}/{algorithm_name}/{task_name}{suffix}")
+            dfs.append(df)
+            keys.append((algorithm_name, task_name))
+
+    df = pd.concat(dfs,
+                   keys=keys,
+                   names=["algorithm", "task"],
+                   verify_integrity=True)
+
+    df["test_mean_squared_error"] = -df["test_neg_mean_squared_error"]
+    del df["test_neg_mean_squared_error"]
+
+    df = df[metrics]
+
+    assert not df.isna().any().any(), "Some values are missing"
+    return df
 
 
 @click.group()
@@ -62,35 +95,7 @@ def calvo(latex, all_variants, check_mcmc):
         else:
             print(df.to_markdown())
 
-    algorithm_names = list_from_ls(dname)
-    print(algorithm_names)
-
-    task_names = [
-        n.removesuffix(suffix)
-        for n in list_from_ls(f"{dname}/{algorithm_names[0]}")
-        if n != f"summary{suffix}"
-    ]
-
-    dfs = []
-    keys = []
-    for algorithm_name in algorithm_names:
-        for task_name in task_names:
-            df = pd.read_csv(f"{dname}/{algorithm_name}/{task_name}{suffix}")
-            dfs.append(df)
-            keys.append((algorithm_name, task_name))
-
-    df = pd.concat(dfs,
-                   keys=keys,
-                   names=["algorithm", "task"],
-                   verify_integrity=True)
-
-    df["test_mean_squared_error"] = -df["test_neg_mean_squared_error"]
-    del df["test_neg_mean_squared_error"]
-
-    metrics = ["test_mean_squared_error", "elitist_complexity"]
-    df = df[metrics]
-
-    assert not df.isna().any().any(), "Some values are missing"
+    df = load_data()
 
     # Explore whether throwing away distributional information gives us any
     # insights.
@@ -127,10 +132,12 @@ def calvo(latex, all_variants, check_mcmc):
             print(title)
             smart_print(ranks.mean())
 
+            algorithm_labels = df.reset_index("algorithm").algorithm.unique()
+
             # NOTE We fix the random seed here to enable model caching.
             model = cmpbayes.Calvo(d.to_numpy(),
                                    higher_better=False,
-                                   algorithm_labels=algorithm_names).fit(
+                                   algorithm_labels=algorithm_labels).fit(
                                        num_samples=10000, random_seed=1)
 
             if check_mcmc:
@@ -140,7 +147,8 @@ def calvo(latex, all_variants, check_mcmc):
 
             # Join all chains, name columns.
             sample = np.concatenate(model.data_.posterior.weights)
-            sample = pd.DataFrame(sample, columns=algorithm_names)
+            sample = pd.DataFrame(
+                sample, columns=model.data_.posterior.algorithm_labels)
             ylabel = "algorithm"
             xlabel = "probability of having the lowest mean squared error"
             sample = sample.unstack().reset_index(0).rename(columns={
@@ -155,10 +163,6 @@ def calvo(latex, all_variants, check_mcmc):
         plt.tight_layout()
         plt.show()
 
-        IPython.embed(banner1="")
-        # consider running `globals().update(locals())` in the shell to fix not being
-        # able to put scopes around variables
-        sys.exit(1)
 
 @cli.command()
 def kruschke():

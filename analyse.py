@@ -24,7 +24,10 @@ matplotlib.rcParams['ps.fonttype'] = 42
 dname = "RD"
 suffix = ".csv"
 
-metrics = ["test_mean_squared_error", "elitist_complexity"]
+metrics = {
+    "test_mean_squared_error": "MSE",
+    "elitist_complexity": "number of rules selected"
+}
 
 
 def list_from_ls(dname):
@@ -65,7 +68,7 @@ def load_data():
     df["test_mean_squared_error"] = -df["test_neg_mean_squared_error"]
     del df["test_neg_mean_squared_error"]
 
-    df = df[metrics]
+    df = df[metrics.keys()]
 
     assert not df.isna().any().any(), "Some values are missing"
     return df
@@ -126,7 +129,9 @@ def calvo(latex, all_variants, check_mcmc):
             i += 1
             title = f"Considering {mode} cv runs per task"
 
-            print(f"Sample statistics for “{title}” are as follows:")
+            print(
+                f"Sample statistics of {metrics[metric]} for “{title}” are as follows:"
+            )
             print()
             ranks = d.apply(np.argsort, axis=1) + 1
             print(title)
@@ -150,7 +155,7 @@ def calvo(latex, all_variants, check_mcmc):
             sample = pd.DataFrame(
                 sample, columns=model.data_.posterior.algorithm_labels)
             ylabel = "algorithm"
-            xlabel = "probability of having the lowest mean squared error"
+            xlabel = f"probability of having the lowest {metrics[metric]}"
             sample = sample.unstack().reset_index(0).rename(columns={
                 "level_0": ylabel,
                 0: xlabel

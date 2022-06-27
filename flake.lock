@@ -1,0 +1,48 @@
+{
+  "nodes": {
+    "cmpbayes": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1655831808,
+        "narHash": "sha256-RJuc7Ib7g/CV8x/bCOUjEGmgP0xEJCDMCfWJNFQnL9M=",
+        "owner": "dpaetzel",
+        "repo": "cmpbayes",
+        "rev": "98de990865b5fc2bc86b2cae72812cbc1b50ad04",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dpaetzel",
+        "repo": "cmpbayes",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1645433236,
+        "narHash": "sha256-4va4MvJ076XyPp5h8sm5eMQvCrJ6yZAbBmyw95dGyw4=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "7f9b6e2babf232412682c09e57ed666d8f84ac2d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "7f9b6e2babf232412682c09e57ed666d8f84ac2d",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "cmpbayes": "cmpbayes",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

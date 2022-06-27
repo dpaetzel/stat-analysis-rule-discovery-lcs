@@ -42,6 +42,13 @@ def list_from_ls(dname):
     return proc.stdout.decode().split("\n")[:-1]
 
 
+def smart_print(df, latex):
+    if latex:
+        print(df.to_latex())
+    else:
+        print(df.to_markdown())
+
+
 def load_data():
     algorithm_names = list_from_ls(dname)
     print(algorithm_names)
@@ -92,12 +99,6 @@ def cli():
     default=False)
 def calvo(latex, all_variants, check_mcmc):
 
-    def smart_print(df):
-        if latex:
-            print(df.to_latex())
-        else:
-            print(df.to_markdown())
-
     df = load_data()
 
     # Explore whether throwing away distributional information gives us any
@@ -135,7 +136,7 @@ def calvo(latex, all_variants, check_mcmc):
             print()
             ranks = d.apply(np.argsort, axis=1) + 1
             print(title)
-            smart_print(ranks.mean())
+            smart_print(ranks.mean(), latex=latex)
 
             algorithm_labels = df.reset_index("algorithm").algorithm.unique()
 
@@ -146,7 +147,7 @@ def calvo(latex, all_variants, check_mcmc):
                                        num_samples=10000, random_seed=1)
 
             if check_mcmc:
-                smart_print(az.summary(model.data_))
+                smart_print(az.summary(model.data_), latex=latex)
                 az.plot_trace(model.data_)
                 az.plot_rank(model.data_)
 

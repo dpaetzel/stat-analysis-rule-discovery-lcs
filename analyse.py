@@ -38,7 +38,12 @@ def list_from_ls(dname):
     return proc.stdout.decode().split("\n")[:-1]
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
 @click.option("--latex/--no-latex",
               help="Generate LaTeX output (tables etc.)",
               default=False)
@@ -49,7 +54,7 @@ def list_from_ls(dname):
     "--check-mcmc/--no-check-mcmc",
     help="Whether to show plots/tables for rudimentary MCMC sanity checking",
     default=False)
-def cli(latex, all_variants, check_mcmc):
+def calvo(latex, all_variants, check_mcmc):
 
     def smart_print(df):
         if latex:
@@ -155,6 +160,9 @@ def cli(latex, all_variants, check_mcmc):
         # able to put scopes around variables
         sys.exit(1)
 
+@cli.command()
+def kruschke():
+    pass
     # Kruschke: ES vs. NSLC (NSLC is basically NS but better) (rope 0.01)
 
 

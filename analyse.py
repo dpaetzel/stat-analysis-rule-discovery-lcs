@@ -81,6 +81,11 @@ def load_data():
     return df
 
 
+def round_to_n_sig_figs(x, n):
+    decimals = -int(np.floor(np.log10(np.abs(x)))) + (n - 1)
+    return x if x == 0 else np.round(x, decimals)
+
+
 @click.group()
 def cli():
     pass
@@ -194,20 +199,18 @@ def ttest(latex):
             n_samples = 50000
             sample = model.model_.rvs(n_samples)
 
-            # If more to the left, choose rope to be at the upper border of the hill
-            # …
-            if (sample < 0).sum() > (sample > 0).sum():
-                rope = abs(model.model_.ppf(0.99))
-                # … if more to the right, choose rope to be at the lower border of the
-                # hill.
-            elif (sample < 0).sum() <= (sample > 0).sum():
-                rope = abs(model.model_.ppf(0.01))
+            alpha = 0.005
+            hdi = (model.model_.ppf(alpha), model.model_.ppf(1 - alpha))
 
             xlower_ = model.model_.ppf(1e-6)
+            xlower_ -= xlower_ * 0.07
             xupper_ = model.model_.ppf(1 - 1e-6)
-            xlower = -max(abs(xlower_), abs(xupper_), rope)
+            xupper_ += xupper_ * 0.07
+            xlower = np.abs([xlower_, xupper_, *hdi]).max()
             xupper = -xlower
             x = np.linspace(xlower, xupper, 1000)
+            # y = model.model_.cdf(x)
+            # x = np.arange(1e-3, 1 - 1e-3, 1e-3)
             y = model.model_.pdf(x)
             xlabel = f"{metrics[metric]}({cand2}) - {metrics[metric]}({cand1})"
             ylabel = "density"
@@ -217,34 +220,44 @@ def ttest(latex):
             #              ax=ax[i],
             #              stat="density")
             sns.lineplot(data=data, x=xlabel, y=ylabel, ax=ax[i])
+            ax[i].set_xlabel("")
+            ax[i].set_ylabel("")
             ax[i].set_title(f"{task}")
-            ax[i].vlines(x=[-rope, rope],
+
+            # Add HDI lines and values.
+            ax[i].vlines(x=hdi,
                          ymin=-0.1 * max(y),
                          ymax=1.1 * max(y),
-                         colors="C1")
+                         colors="C1",
+                         linestyles="dashed")
+            ax[i].text(x=hdi[0],
+                    y=1.15 * max(y),
+                    s=round_to_n_sig_figs(hdi[0], 2),
+                    ha="right",
+                    va="center",
+                    color="C1",
+                    fontweight="bold")
+            ax[i].text(x=hdi[1],
+                    y=1.15 * max(y),
+                    s=round_to_n_sig_figs(hdi[1], 2),
+                    ha="left",
+                    va="center",
+                    color="C1",
+                    fontweight="bold")
 
-            # print()
-            # print("p(ES >> NSLC)", (sample < -rope).sum() / n_samples)
-            # print("p(ES == NSLC)", np.logical_and(-rope < sample, sample < rope).sum() / n_samples)
-            # print("p(ES >> NSLC)", (rope < sample).sum() / n_samples)
-            # print()
             print(f"## {task}")
             print()
-            print(f"With rope={rope}")
-            print("p(ES >> NSLC)", (sample < -rope).sum() / n_samples)
             print(
-                "p(ES == NSLC)",
-                np.logical_and(-rope < sample, sample < rope).sum()
-                / n_samples)
-            print("p(ES >> NSLC)", (rope < sample).sum() / n_samples)
+                f"{100 * (1 - 2 * alpha):.1f}% that difference lies in {hdi}")
             print()
 
-            # TODO Choose rope such that we have >99% for the winner
-
+        ax[i].set_ylabel(ylabel)
+        ax[i].set_xlabel(xlabel)
         plt.tight_layout()
         plt.show()
+        print()
 
-    IPython.embed()
+    # IPython.embed()
     # Kruschke: ES vs. NSLC (NSLC is basically NS but better) (rope 0.01)
 
 

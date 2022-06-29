@@ -14,16 +14,17 @@ from IPython import embed
 
 pd.options.display.max_rows = 2000
 
-plt.style.use("seaborn")
+sns.set_style("whitegrid")
 
 # TODO Store via PGF backend with nicer LaTeXy fonts etc.
 # https://jwalton.info/Matplotlib-latex-PGF/
 # matplotlib.use("pgf")
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 
 dname = "RD"
 suffix = ".csv"
+plotdir = "plots"
 
 metrics = {
     "test_mean_squared_error": "MSE",
@@ -125,7 +126,7 @@ def calvo(latex, all_variants, check_mcmc):
         variants = {"all": variants["all"]}
 
     for metric in metrics:
-        fig, ax = plt.subplots(len(variants))
+        fig, ax = plt.subplots(len(variants), figsize=(8, 5), dpi=300)
         if not all_variants:
             ax = [ax]
         i = -1
@@ -156,20 +157,23 @@ def calvo(latex, all_variants, check_mcmc):
             # Join all chains, name columns.
             sample = np.concatenate(model.data_.posterior.weights)
             sample = pd.DataFrame(
-            ylabel = "algorithm"
-            xlabel = f"probability of having the lowest {metrics[metric]}"
                 sample, columns=model.data_.posterior.weights.algorithm_labels)
+            ylabel = "RD method"
+            xlabel = f"Probability of having the lowest {metrics[metric]}"
             sample = sample.unstack().reset_index(0).rename(columns={
                 "level_0": ylabel,
                 0: xlabel
             })
 
-            sns.boxplot(data=sample, y=ylabel, x=xlabel, ax=ax[i])
+            sns.boxplot(data=sample, y=ylabel, x=xlabel, ax=ax[i], fliersize=0.3)
             if all_variants:
                 ax[i].set_title(title)
+            ax[i].set_xlabel(xlabel, weight="bold")
+            ax[i].set_ylabel(ylabel, weight="bold")
 
-        plt.tight_layout()
-        plt.show()
+        fig.tight_layout()
+        fig.savefig(f"{plotdir}/calvo-{metric}.pdf", dpi=fig.dpi)
+        # plt.show()
 
 
 @cli.command()
@@ -188,7 +192,7 @@ def ttest(latex):
         print(f"# {metrics[metric]}")
         print()
 
-        fig, ax = plt.subplots(4)
+        fig, ax = plt.subplots(4, figsize=(8, 5), dpi=300)
         for i, task in enumerate(tasks):
 
             y1 = df[metric].loc[cand1, task]
@@ -216,7 +220,7 @@ def ttest(latex):
 
             # Create DataFrame for easier seaborn'ing.
             xlabel = f"{metrics[metric]}({cand2}) - {metrics[metric]}({cand1})"
-            ylabel = "density"
+            ylabel = "Density"
             data = pd.DataFrame({xlabel: x, ylabel: y})
 
             # Plot posterior.
@@ -227,23 +231,23 @@ def ttest(latex):
             sns.lineplot(data=data, x=xlabel, y=ylabel, ax=ax[i])
             ax[i].set_xlabel("")
             ax[i].set_ylabel("")
-            ax[i].set_title(f"{tasks[task]}")
+            ax[i].set_title(f"{tasks[task]}", style="italic")
 
             # Add HDI lines and values.
             ax[i].vlines(x=hdi,
                          ymin=-0.1 * max(y),
-                         ymax=1.1 * max(y),
+                         ymax=1.2 * max(y),
                          colors="C1",
                          linestyles="dashed")
             ax[i].text(x=hdi[0],
-                    y=1.15 * max(y),
+                    y=1.3 * max(y),
                     s=round_to_n_sig_figs(hdi[0], 2),
                     ha="right",
                     va="center",
                     color="C1",
                     fontweight="bold")
             ax[i].text(x=hdi[1],
-                    y=1.15 * max(y),
+                    y=1.3 * max(y),
                     s=round_to_n_sig_figs(hdi[1], 2),
                     ha="left",
                     va="center",
@@ -256,25 +260,37 @@ def ttest(latex):
                 f"{100 * (1 - 2 * alpha):.1f}% that difference lies in {hdi}")
             print()
 
-        ax[i].set_ylabel(ylabel)
-        ax[i].set_xlabel(xlabel)
-        plt.tight_layout()
-        plt.show()
+        ax[i].set_ylabel(ylabel, weight="bold")
+        ax[i].set_xlabel(xlabel, weight="bold")
+        fig.tight_layout()
+        fig.savefig(f"{plotdir}/ttest-{metric}.pdf", dpi=fig.dpi)
+        # plt.show()
         print()
 
     # https://stackoverflow.com/a/67575847/6936216
     hdis_ = hdis
     hdis_melt = pd.json_normalize(hdis_, sep=">>").melt()
     hdis = hdis_melt["variable"].str.split(">>", expand=True)
-    hdis.columns = ["n", "metric", "task", ""]
+    hdis.columns = ["n", "metric", "task", "kind"]
     del hdis["n"]
     hdis["bound"] = hdis_melt["value"]
     hdis = hdis.set_index(list(hdis.columns[:-1]))
-    hdis["bound"] = hdis["bound"].apply(partial(round_to_n_sig_figs, n=2))
-    hdis = hdis.groupby(["metric", "task"]).agg(list)
+    hdis = hdis.unstack("kind")
+    hdis["bound", "lower"] = hdis["bound", "lower"].apply(lambda x: f"[{round_to_n_sig_figs(x, n=2)},")
+    hdis["bound", "upper"] = hdis["bound", "upper"].apply(lambda x: f"{round_to_n_sig_figs(x, n=2)}]")
+    hdis = hdis.rename(columns={"bound": "99\% HDI"})
 
     smart_print(hdis, latex=latex)
 
 # TODO Consider to try tom, too, here
 if __name__ == "__main__":
     cli()
+
+# DONE Fix algortihm ordering in calvo plots
+# TODO Half width for Calvo
+# TODO Adjust height of diagrams (don't have text on diagram border)
+# TODO Half width for ttest nrules
+# TODO Colour density (slightly less intensely)
+# TODO Redo the violin plots
+# TODO Check references in text to violin plots
+# TODO Maybe Times New Roman font (10 pt is section text)

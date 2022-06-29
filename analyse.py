@@ -35,6 +35,7 @@ tasks = {
     "airfoil_self_noise" : "ASN",
     "energy_cool" : "EEC",
 }
+algorithms = ["ES", "RS", "NS", "MCNS", "NSLC"]
 
 
 def list_from_ls(dname):
@@ -57,23 +58,13 @@ def smart_print(df, latex):
 
 
 def load_data():
-    algorithm_names = list_from_ls(dname)
-    print(algorithm_names)
-
-    # task_names = [
-    #     n.removesuffix(suffix)
-    #     for n in list_from_ls(f"{dname}/{algorithm_names[0]}")
-    #     if n != f"summary{suffix}"
-    # ]
-    # assert sort(task_names == tasks.keys()
-
     dfs = []
     keys = []
-    for algorithm_name in algorithm_names:
+    for algorithm in algorithms:
         for task in tasks:
-            df = pd.read_csv(f"{dname}/{algorithm_name}/{task}{suffix}")
+            df = pd.read_csv(f"{dname}/{algorithm}/{task}{suffix}")
             dfs.append(df)
-            keys.append((algorithm_name, task))
+            keys.append((algorithm, task))
 
     df = pd.concat(dfs,
                    keys=keys,
@@ -151,12 +142,10 @@ def calvo(latex, all_variants, check_mcmc):
             print(title)
             smart_print(ranks.mean(), latex=latex)
 
-            algorithm_labels = df.reset_index("algorithm").algorithm.unique()
-
             # NOTE We fix the random seed here to enable model caching.
             model = cmpbayes.Calvo(d.to_numpy(),
                                    higher_better=False,
-                                   algorithm_labels=algorithm_labels).fit(
+                                   algorithm_labels=d.columns.to_list()).fit(
                                        num_samples=10000, random_seed=1)
 
             if check_mcmc:
@@ -167,9 +156,9 @@ def calvo(latex, all_variants, check_mcmc):
             # Join all chains, name columns.
             sample = np.concatenate(model.data_.posterior.weights)
             sample = pd.DataFrame(
-                sample, columns=model.data_.posterior.algorithm_labels)
             ylabel = "algorithm"
             xlabel = f"probability of having the lowest {metrics[metric]}"
+                sample, columns=model.data_.posterior.weights.algorithm_labels)
             sample = sample.unstack().reset_index(0).rename(columns={
                 "level_0": ylabel,
                 0: xlabel

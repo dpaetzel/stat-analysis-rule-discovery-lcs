@@ -21,6 +21,19 @@ sns.set_style("whitegrid")
 # matplotlib.use("pgf")
 matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
+font = {
+    "family": "Times New Roman",
+    # "weight" : "bold",
+    "size": 8
+}
+matplotlib.rc("font", **font)
+# Add \the\linewidth into the LaTeX file to get this value (it's in pt).
+linewidth = 213.41443
+# A TeX pt is 1/72.27 inches acc. to https://tex.stackexchange.com/a/53509/191862 .
+linewidth /= 72.27
+# Add \the\textwidth into the LaTeX file to get this value (it's in pt).
+textwidth = 449.59116
+textwidth /= 72.27
 
 dname = "RD"
 suffix = ".csv"
@@ -28,13 +41,13 @@ plotdir = "plots"
 
 metrics = {
     "test_mean_squared_error": "MSE",
-    "elitist_complexity": "number of rules selected"
+    "elitist_complexity": "model complexity"
 }
 tasks = {
-    "combined_cycle_power_plant" : "CCPP",
-    "concrete_strength" : "CS",
-    "airfoil_self_noise" : "ASN",
-    "energy_cool" : "EEC",
+    "combined_cycle_power_plant": "CCPP",
+    "concrete_strength": "CS",
+    "airfoil_self_noise": "ASN",
+    "energy_cool": "EEC",
 }
 algorithms = ["ES", "RS", "NS", "MCNS", "NSLC"]
 
@@ -126,7 +139,7 @@ def calvo(latex, all_variants, check_mcmc):
         variants = {"all": variants["all"]}
 
     for metric in metrics:
-        fig, ax = plt.subplots(len(variants), figsize=(8, 5), dpi=300)
+        fig, ax = plt.subplots(len(variants), figsize=(linewidth, 4), dpi=72)
         if not all_variants:
             ax = [ax]
         i = -1
@@ -165,7 +178,11 @@ def calvo(latex, all_variants, check_mcmc):
                 0: xlabel
             })
 
-            sns.boxplot(data=sample, y=ylabel, x=xlabel, ax=ax[i], fliersize=0.3)
+            sns.boxplot(data=sample,
+                        y=ylabel,
+                        x=xlabel,
+                        ax=ax[i],
+                        fliersize=0.3)
             if all_variants:
                 ax[i].set_title(title)
             ax[i].set_xlabel(xlabel, weight="bold")
@@ -192,7 +209,11 @@ def ttest(latex):
         print(f"# {metrics[metric]}")
         print()
 
-        fig, ax = plt.subplots(4, figsize=(8, 5), dpi=300)
+        fig, ax = plt.subplots(
+            4,
+            figsize=(textwidth if metrics[metric] == "MSE" else linewidth, 5),
+            # Default LaTeX dpi.
+            dpi=72)
         for i, task in enumerate(tasks):
 
             y1 = df[metric].loc[cand1, task]
@@ -202,7 +223,10 @@ def ttest(latex):
             # Compute 100(1 - alpha)% high density interval.
             alpha = 0.005
             hdi = (model.model_.ppf(alpha), model.model_.ppf(1 - alpha))
-            hdis[metrics[metric]][tasks[task]] = { "lower" : hdi[0], "upper": hdi[1] }
+            hdis[metrics[metric]][tasks[task]] = {
+                "lower": hdi[0],
+                "upper": hdi[1]
+            }
 
             # Compute bounds of the plots based on ppf.
             xlower_ = model.model_.ppf(1e-6)
@@ -219,7 +243,10 @@ def ttest(latex):
             y = model.model_.pdf(x)
 
             # Create DataFrame for easier seaborn'ing.
-            xlabel = f"{metrics[metric]}({cand2}) - {metrics[metric]}({cand1})"
+            xlabel = (
+                f"{metrics[metric]}({cand2}) - {metrics[metric]}({cand1})"
+                if metrics[metric] == "MSE" else
+                f"{metrics[metric]}({cand2})\n- {metrics[metric]}({cand1})")
             ylabel = "Density"
             data = pd.DataFrame({xlabel: x, ylabel: y})
 
@@ -229,6 +256,7 @@ def ttest(latex):
             #              ax=ax[i],
             #              stat="density")
             sns.lineplot(data=data, x=xlabel, y=ylabel, ax=ax[i])
+            ax[i].fill_between(x, 0, y, alpha=0.33)
             ax[i].set_xlabel("")
             ax[i].set_ylabel("")
             ax[i].set_title(f"{tasks[task]}", style="italic")
@@ -240,19 +268,21 @@ def ttest(latex):
                          colors="C1",
                          linestyles="dashed")
             ax[i].text(x=hdi[0],
-                    y=1.3 * max(y),
-                    s=round_to_n_sig_figs(hdi[0], 2),
-                    ha="right",
-                    va="center",
-                    color="C1",
-                    fontweight="bold")
+                       y=1.3 * max(y),
+                       s=round_to_n_sig_figs(hdi[0], 2),
+                       ha="right",
+                       va="center",
+                       color="C1",
+                       fontweight="bold")
             ax[i].text(x=hdi[1],
-                    y=1.3 * max(y),
-                    s=round_to_n_sig_figs(hdi[1], 2),
-                    ha="left",
-                    va="center",
-                    color="C1",
-                    fontweight="bold")
+                       y=1.3 * max(y),
+                       s=round_to_n_sig_figs(hdi[1], 2),
+                       ha="left",
+                       va="center",
+                       color="C1",
+                       fontweight="bold")
+
+            ax[i].set_ylim(top=1.2 * max(y))
 
             print(f"## {task} ({tasks[task]})")
             print()
@@ -276,21 +306,24 @@ def ttest(latex):
     hdis["bound"] = hdis_melt["value"]
     hdis = hdis.set_index(list(hdis.columns[:-1]))
     hdis = hdis.unstack("kind")
-    hdis["bound", "lower"] = hdis["bound", "lower"].apply(lambda x: f"[{round_to_n_sig_figs(x, n=2)},")
-    hdis["bound", "upper"] = hdis["bound", "upper"].apply(lambda x: f"{round_to_n_sig_figs(x, n=2)}]")
+    hdis["bound", "lower"] = hdis["bound", "lower"].apply(
+        lambda x: f"[{round_to_n_sig_figs(x, n=2)},")
+    hdis["bound", "upper"] = hdis["bound", "upper"].apply(
+        lambda x: f"{round_to_n_sig_figs(x, n=2)}]")
     hdis = hdis.rename(columns={"bound": "99\% HDI"})
 
     smart_print(hdis, latex=latex)
+
 
 # TODO Consider to try tom, too, here
 if __name__ == "__main__":
     cli()
 
 # DONE Fix algortihm ordering in calvo plots
-# TODO Half width for Calvo
-# TODO Adjust height of diagrams (don't have text on diagram border)
-# TODO Half width for ttest nrules
-# TODO Colour density (slightly less intensely)
+# DONE Half width for Calvo
+# DONE Adjust height of diagrams (don't have text on diagram border)
+# DONE Half width for ttest nrules
+# DONE Colour density (slightly less intensely)
+# DONE Maybe Times New Roman font (10 pt is section text)
 # TODO Redo the violin plots
 # TODO Check references in text to violin plots
-# TODO Maybe Times New Roman font (10 pt is section text)

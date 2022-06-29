@@ -29,6 +29,12 @@ metrics = {
     "test_mean_squared_error": "MSE",
     "elitist_complexity": "number of rules selected"
 }
+tasks = {
+    "combined_cycle_power_plant" : "CCPP",
+    "concrete_strength" : "CS",
+    "airfoil_self_noise" : "ASN",
+    "energy_cool" : "EEC",
+}
 
 
 def list_from_ls(dname):
@@ -54,19 +60,20 @@ def load_data():
     algorithm_names = list_from_ls(dname)
     print(algorithm_names)
 
-    task_names = [
-        n.removesuffix(suffix)
-        for n in list_from_ls(f"{dname}/{algorithm_names[0]}")
-        if n != f"summary{suffix}"
-    ]
+    # task_names = [
+    #     n.removesuffix(suffix)
+    #     for n in list_from_ls(f"{dname}/{algorithm_names[0]}")
+    #     if n != f"summary{suffix}"
+    # ]
+    # assert sort(task_names == tasks.keys()
 
     dfs = []
     keys = []
     for algorithm_name in algorithm_names:
-        for task_name in task_names:
-            df = pd.read_csv(f"{dname}/{algorithm_name}/{task_name}{suffix}")
+        for task in tasks:
+            df = pd.read_csv(f"{dname}/{algorithm_name}/{task}{suffix}")
             dfs.append(df)
-            keys.append((algorithm_name, task_name))
+            keys.append((algorithm_name, task))
 
     df = pd.concat(dfs,
                    keys=keys,
@@ -187,13 +194,12 @@ def ttest(latex):
 
     hdis = {}
     for metric in metrics:
-        hdis[metric] = {}
+        hdis[metrics[metric]] = {}
 
         print(f"# {metrics[metric]}")
         print()
 
         fig, ax = plt.subplots(4)
-        tasks = df.index.to_frame().task.unique()
         for i, task in enumerate(tasks):
 
             y1 = df[metric].loc[cand1, task]
@@ -203,7 +209,7 @@ def ttest(latex):
             # Compute 100(1 - alpha)% high density interval.
             alpha = 0.005
             hdi = (model.model_.ppf(alpha), model.model_.ppf(1 - alpha))
-            hdis[metric][task] = { "lower" : hdi[0], "upper": hdi[1] }
+            hdis[metrics[metric]][tasks[task]] = { "lower" : hdi[0], "upper": hdi[1] }
 
             # Compute bounds of the plots based on ppf.
             xlower_ = model.model_.ppf(1e-6)
@@ -232,7 +238,7 @@ def ttest(latex):
             sns.lineplot(data=data, x=xlabel, y=ylabel, ax=ax[i])
             ax[i].set_xlabel("")
             ax[i].set_ylabel("")
-            ax[i].set_title(f"{task}")
+            ax[i].set_title(f"{tasks[task]}")
 
             # Add HDI lines and values.
             ax[i].vlines(x=hdi,
@@ -255,7 +261,7 @@ def ttest(latex):
                     color="C1",
                     fontweight="bold")
 
-            print(f"## {task}")
+            print(f"## {task} ({tasks[task]})")
             print()
             print(
                 f"{100 * (1 - 2 * alpha):.1f}% that difference lies in {hdi}")

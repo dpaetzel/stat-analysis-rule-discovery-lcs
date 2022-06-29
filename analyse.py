@@ -1,15 +1,16 @@
 import subprocess
 import sys
+from functools import partial
 
 import arviz as az
-import seaborn as sns
-import IPython
 import click
 import cmpbayes
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from IPython import embed
 
 pd.options.display.max_rows = 2000
 
@@ -184,7 +185,10 @@ def ttest(latex):
     cand1 = "ES"
     cand2 = "NSLC"
 
+    hdis = {}
     for metric in metrics:
+        hdis[metric] = {}
+
         print(f"# {metrics[metric]}")
         print()
 
@@ -196,25 +200,31 @@ def ttest(latex):
             y2 = df[metric].loc[cand2, task]
             model = cmpbayes.BayesCorrTTest(y1, y2, fraction_test=0.25).fit()
 
-            n_samples = 50000
-            sample = model.model_.rvs(n_samples)
-
+            # Compute 100(1 - alpha)% high density interval.
             alpha = 0.005
             hdi = (model.model_.ppf(alpha), model.model_.ppf(1 - alpha))
+            hdis[metric][task] = { "lower" : hdi[0], "upper": hdi[1] }
 
+            # Compute bounds of the plots based on ppf.
             xlower_ = model.model_.ppf(1e-6)
             xlower_ -= xlower_ * 0.07
             xupper_ = model.model_.ppf(1 - 1e-6)
             xupper_ += xupper_ * 0.07
             xlower = np.abs([xlower_, xupper_, *hdi]).max()
             xupper = -xlower
+
+            # Compute pdf values of posterior.
             x = np.linspace(xlower, xupper, 1000)
             # y = model.model_.cdf(x)
             # x = np.arange(1e-3, 1 - 1e-3, 1e-3)
             y = model.model_.pdf(x)
+
+            # Create DataFrame for easier seaborn'ing.
             xlabel = f"{metrics[metric]}({cand2}) - {metrics[metric]}({cand1})"
             ylabel = "density"
             data = pd.DataFrame({xlabel: x, ylabel: y})
+
+            # Plot posterior.
             # sns.histplot(model.model_.rvs(50000),
             #              bins=100,
             #              ax=ax[i],
@@ -257,9 +267,19 @@ def ttest(latex):
         plt.show()
         print()
 
-    # IPython.embed()
-    # Kruschke: ES vs. NSLC (NSLC is basically NS but better) (rope 0.01)
+    # https://stackoverflow.com/a/67575847/6936216
+    hdis_ = hdis
+    hdis_melt = pd.json_normalize(hdis_, sep=">>").melt()
+    hdis = hdis_melt["variable"].str.split(">>", expand=True)
+    hdis.columns = ["n", "metric", "task", ""]
+    del hdis["n"]
+    hdis["bound"] = hdis_melt["value"]
+    hdis = hdis.set_index(list(hdis.columns[:-1]))
+    hdis["bound"] = hdis["bound"].apply(partial(round_to_n_sig_figs, n=2))
+    hdis = hdis.groupby(["metric", "task"]).agg(list)
 
+    smart_print(hdis, latex=latex)
 
+# TODO Consider to try tom, too, here
 if __name__ == "__main__":
     cli()

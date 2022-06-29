@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1655831808,
-        "narHash": "sha256-RJuc7Ib7g/CV8x/bCOUjEGmgP0xEJCDMCfWJNFQnL9M=",
+        "lastModified": 1656426737,
+        "narHash": "sha256-lkVa8rSfWvH5OGrKNEMCiU5figF4eyllLSddyauvoHM=",
         "owner": "dpaetzel",
         "repo": "cmpbayes",
-        "rev": "98de990865b5fc2bc86b2cae72812cbc1b50ad04",
+        "rev": "62366d1585027d2aed66c97485e52dfc7098582b",
         "type": "github"
       },
       "original": {

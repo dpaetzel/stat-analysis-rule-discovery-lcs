@@ -171,8 +171,80 @@ def calvo(latex, all_variants, check_mcmc):
 
 
 @cli.command()
-def kruschke():
-    pass
+@click.option("--latex/--no-latex",
+              help="Generate LaTeX output (tables etc.)",
+              default=False)
+def ttest(latex):
+    df = load_data()
+    cand1 = "ES"
+    cand2 = "NSLC"
+
+    for metric in metrics:
+        print(f"# {metrics[metric]}")
+        print()
+
+        fig, ax = plt.subplots(4)
+        tasks = df.index.to_frame().task.unique()
+        for i, task in enumerate(tasks):
+
+            y1 = df[metric].loc[cand1, task]
+            y2 = df[metric].loc[cand2, task]
+            model = cmpbayes.BayesCorrTTest(y1, y2, fraction_test=0.25).fit()
+
+            n_samples = 50000
+            sample = model.model_.rvs(n_samples)
+
+            # If more to the left, choose rope to be at the upper border of the hill
+            # …
+            if (sample < 0).sum() > (sample > 0).sum():
+                rope = abs(model.model_.ppf(0.99))
+                # … if more to the right, choose rope to be at the lower border of the
+                # hill.
+            elif (sample < 0).sum() <= (sample > 0).sum():
+                rope = abs(model.model_.ppf(0.01))
+
+            xlower_ = model.model_.ppf(1e-6)
+            xupper_ = model.model_.ppf(1 - 1e-6)
+            xlower = -max(abs(xlower_), abs(xupper_), rope)
+            xupper = -xlower
+            x = np.linspace(xlower, xupper, 1000)
+            y = model.model_.pdf(x)
+            xlabel = f"{metrics[metric]}({cand2}) - {metrics[metric]}({cand1})"
+            ylabel = "density"
+            data = pd.DataFrame({xlabel: x, ylabel: y})
+            # sns.histplot(model.model_.rvs(50000),
+            #              bins=100,
+            #              ax=ax[i],
+            #              stat="density")
+            sns.lineplot(data=data, x=xlabel, y=ylabel, ax=ax[i])
+            ax[i].set_title(f"{task}")
+            ax[i].vlines(x=[-rope, rope],
+                         ymin=-0.1 * max(y),
+                         ymax=1.1 * max(y),
+                         colors="C1")
+
+            # print()
+            # print("p(ES >> NSLC)", (sample < -rope).sum() / n_samples)
+            # print("p(ES == NSLC)", np.logical_and(-rope < sample, sample < rope).sum() / n_samples)
+            # print("p(ES >> NSLC)", (rope < sample).sum() / n_samples)
+            # print()
+            print(f"## {task}")
+            print()
+            print(f"With rope={rope}")
+            print("p(ES >> NSLC)", (sample < -rope).sum() / n_samples)
+            print(
+                "p(ES == NSLC)",
+                np.logical_and(-rope < sample, sample < rope).sum()
+                / n_samples)
+            print("p(ES >> NSLC)", (rope < sample).sum() / n_samples)
+            print()
+
+            # TODO Choose rope such that we have >99% for the winner
+
+        plt.tight_layout()
+        plt.show()
+
+    IPython.embed()
     # Kruschke: ES vs. NSLC (NSLC is basically NS but better) (rope 0.01)
 
 

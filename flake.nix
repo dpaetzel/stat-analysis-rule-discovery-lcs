@@ -40,11 +40,12 @@
         postShellHook = ''
           unset SOURCE_DATE_EPOCH
 
-          export LD_LIBRARY_PATH="${
-            pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc ]
-          }:$LD_LIBRARY_PATH";
           PYTHONPATH=$PWD/$venvDir/${python.sitePackages}:$PYTHONPATH
         '';
+        # Interferes with `nix flake update` and other commands.
+        # export LD_LIBRARY_PATH="${
+        #   pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc ]
+        # }:$LD_LIBRARY_PATH";
 
         # Using httpstan==4.7.2 (the default as of 2022-06-10) leads to a
         # missing symbols error on NixOS. 4.7.1 works, however, so we use that.

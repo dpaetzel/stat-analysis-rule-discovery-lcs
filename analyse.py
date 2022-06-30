@@ -138,7 +138,8 @@ def calvo(latex, all_variants, check_mcmc):
         variants = {"all": variants["all"]}
 
     for metric in metrics:
-        fig, ax = plt.subplots(len(variants), figsize=(linewidth, 2.7), dpi=72)
+        # fig, ax = plt.subplots(len(variants), figsize=(linewidth, 2.7), dpi=72)
+        fig, ax = plt.subplots(len(variants), figsize=(textwidth, 2.7), dpi=72)
         if not all_variants:
             ax = [ax]
         i = -1
@@ -214,7 +215,9 @@ def calvo(latex, all_variants, check_mcmc):
             ax[i].set_ylabel(ylabel, weight="bold")
 
         fig.tight_layout()
-        fig.savefig(f"{plotdir}/calvo-{metric}.pdf", dpi=fig.dpi)
+        fig.savefig(f"{plotdir}/calvo-{metric}.pdf",
+                    dpi=fig.dpi,
+                    bbox_inches="tight")
         # plt.show()
 
 
@@ -319,7 +322,9 @@ def ttest(latex):
         ax[i].set_ylabel(ylabel, weight="bold")
         ax[i].set_xlabel(xlabel, weight="bold")
         fig.tight_layout()
-        fig.savefig(f"{plotdir}/ttest-{metric}.pdf", dpi=fig.dpi)
+        fig.savefig(f"{plotdir}/ttest-{metric}.pdf",
+                    dpi=fig.dpi,
+                    bbox_inches="tight")
         # plt.show()
         print()
 
@@ -368,7 +373,9 @@ def violins():
     ax[1][0].set_xlabel(xlabel, weight="bold")
     ax[1][0].set_ylabel(ylabel, weight="bold")
     fig.tight_layout()
-    fig.savefig(f"{plotdir}/violins-{metric}.pdf", dpi=fig.dpi)
+    fig.savefig(f"{plotdir}/violins-{metric}.pdf",
+                dpi=fig.dpi,
+                bbox_inches="tight")
 
 
 # TODO Consider to try tom, too, here

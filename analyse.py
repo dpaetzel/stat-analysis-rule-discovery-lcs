@@ -45,8 +45,8 @@ metrics = {
 }
 tasks = {
     "combined_cycle_power_plant": "CCPP",
-    "concrete_strength": "CS",
     "airfoil_self_noise": "ASN",
+    "concrete_strength": "CS",
     "energy_cool": "EEC",
 }
 algorithms = ["ES", "RS", "NS", "MCNS", "NSLC"]
@@ -144,8 +144,14 @@ def calvo(latex, all_variants, check_mcmc):
             ax = [ax]
         i = -1
         for mode, f in variants.items():
-            d = f(df)
             i += 1
+
+            d = f(df)
+
+            # We want the algorithms ordered as they are in the `algorithms`
+            # list.
+            d = d[algorithms]
+
             title = f"Considering {mode} cv runs per task"
 
             print(

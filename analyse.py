@@ -139,7 +139,7 @@ def calvo(latex, all_variants, check_mcmc):
         variants = {"all": variants["all"]}
 
     for metric in metrics:
-        fig, ax = plt.subplots(len(variants), figsize=(linewidth, 4), dpi=72)
+        fig, ax = plt.subplots(len(variants), figsize=(linewidth, 2.7), dpi=72)
         if not all_variants:
             ax = [ax]
         i = -1

@@ -14,19 +14,19 @@ from IPython import embed
 
 pd.options.display.max_rows = 2000
 
-sns.set(style="whitegrid", rc={"lines.linewidth": 1})
-
 # TODO Store via PGF backend with nicer LaTeXy fonts etc.
 # https://jwalton.info/Matplotlib-latex-PGF/
 # matplotlib.use("pgf")
-matplotlib.rcParams["pdf.fonttype"] = 42
-matplotlib.rcParams["ps.fonttype"] = 42
-font = {
-    "family": "Times New Roman",
-    # "weight" : "bold",
-    "size": 8
-}
-matplotlib.rc("font", **font)
+sns.set_theme(style="whitegrid",
+              font="Times New Roman",
+              font_scale=0.8,
+              rc={
+                  "lines.linewidth": 1,
+                  "text.usetex": True,
+                  "pdf.fonttype": 42,
+                  "ps.fonttype": 42
+              })
+
 # Add \the\linewidth into the LaTeX file to get this value (it's in pt).
 linewidth = 213.41443
 # A TeX pt is 1/72.27 inches acc. to https://tex.stackexchange.com/a/53509/191862 .

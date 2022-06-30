@@ -184,6 +184,25 @@ def calvo(latex, all_variants, check_mcmc):
                 0: xlabel
             })
 
+            add_prob = sample[sample[ylabel] == "ES"][xlabel] + sample[
+                sample[ylabel] == "NSLC"][xlabel]
+            add_prob = pd.DataFrame({
+                ylabel:
+                np.repeat("ES $\wedge$ NSLC", len(add_prob)),
+                xlabel:
+                add_prob
+            })
+            sample = sample.append(add_prob)
+            add_prob = sample[sample[ylabel] == "ES"][xlabel] + sample[
+                sample[ylabel] == "NSLC"][xlabel] + sample[sample[ylabel] == "NS"][xlabel]
+            add_prob = pd.DataFrame({
+                ylabel:
+                np.repeat("ES $\wedge$ NSLC $\wedge$ NS", len(add_prob)),
+                xlabel:
+                add_prob
+            })
+            sample = sample.append(add_prob)
+
             sns.boxplot(data=sample,
                         y=ylabel,
                         x=xlabel,

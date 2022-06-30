@@ -322,6 +322,36 @@ def ttest(latex):
     smart_print(hdis, latex=latex)
 
 
+@cli.command()
+def violins():
+    df = load_data()
+
+    metric = "test_mean_squared_error"
+    fig, ax = plt.subplots(2, 2, figsize=(textwidth, 2.7 * 2), dpi=72)
+
+    xlabel = "RD method"
+    ylabel = "MSE"
+
+    for i, task in enumerate(tasks):
+        d = df[metric].swaplevel(0, 1).loc[task]
+        # Make index a column (seaborn requires this seemingly).
+        d = d.reset_index()
+        ax_ = ax[i // 2][i % 2]
+        sns.violinplot(data=d,
+                       x="algorithm",
+                       y="test_mean_squared_error",
+                       ax=ax_)
+
+        ax_.set_title(tasks[task], style="italic")
+        ax_.set_xlabel("")
+        ax_.set_ylabel("")
+
+    ax[1][0].set_xlabel(xlabel, weight="bold")
+    ax[1][0].set_ylabel(ylabel, weight="bold")
+    fig.tight_layout()
+    fig.savefig(f"{plotdir}/violins-{metric}.pdf", dpi=fig.dpi)
+
+
 # TODO Consider to try tom, too, here
 if __name__ == "__main__":
     cli()

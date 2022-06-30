@@ -114,7 +114,11 @@ def cli():
     "--check-mcmc/--no-check-mcmc",
     help="Whether to show plots/tables for rudimentary MCMC sanity checking",
     default=False)
-def calvo(latex, all_variants, check_mcmc):
+@click.option(
+    "--small-set/--no-small-set",
+    help="Whether to only analyse ES, NS, NSLC",
+    default=False)
+def calvo(latex, all_variants, check_mcmc, small_set):
 
     df = load_data()
 
@@ -150,7 +154,7 @@ def calvo(latex, all_variants, check_mcmc):
 
             # We want the algorithms ordered as they are in the `algorithms`
             # list.
-            d = d[algorithms]
+            d = d[algorithms if not small_set else ["ES", "NS", "NSLC"]]
 
             title = f"Considering {mode} cv runs per task"
 
@@ -185,24 +189,25 @@ def calvo(latex, all_variants, check_mcmc):
                 0: xlabel
             })
 
-            add_prob = sample[sample[ylabel] == "ES"][xlabel] + sample[
-                sample[ylabel] == "NSLC"][xlabel]
-            add_prob = pd.DataFrame({
-                ylabel:
-                np.repeat("ES $\wedge$ NSLC", len(add_prob)),
-                xlabel:
-                add_prob
-            })
-            sample = sample.append(add_prob)
-            add_prob = sample[sample[ylabel] == "ES"][xlabel] + sample[
-                sample[ylabel] == "NSLC"][xlabel] + sample[sample[ylabel] == "NS"][xlabel]
-            add_prob = pd.DataFrame({
-                ylabel:
-                np.repeat("ES $\wedge$ NSLC $\wedge$ NS", len(add_prob)),
-                xlabel:
-                add_prob
-            })
-            sample = sample.append(add_prob)
+            if metrics[metric] == "MSE":
+                add_prob = sample[sample[ylabel] == "ES"][xlabel] + sample[
+                    sample[ylabel] == "NSLC"][xlabel]
+                add_prob = pd.DataFrame({
+                    ylabel:
+                    np.repeat("ES $\wedge$ NSLC", len(add_prob)),
+                    xlabel:
+                    add_prob
+                })
+                sample = sample.append(add_prob)
+                add_prob = sample[sample[ylabel] == "ES"][xlabel] + sample[
+                    sample[ylabel] == "NSLC"][xlabel] + sample[sample[ylabel] == "NS"][xlabel]
+                add_prob = pd.DataFrame({
+                    ylabel:
+                    np.repeat("ES $\wedge$ NSLC $\wedge$ NS", len(add_prob)),
+                    xlabel:
+                    add_prob
+                })
+                sample = sample.append(add_prob)
 
             sns.boxplot(data=sample,
                         y=ylabel,
@@ -215,7 +220,7 @@ def calvo(latex, all_variants, check_mcmc):
             ax[i].set_ylabel(ylabel, weight="bold")
 
         fig.tight_layout()
-        fig.savefig(f"{plotdir}/calvo-{metric}.pdf",
+        fig.savefig(f"{plotdir}/calvo-{metric}{'' if not small_set else '-small'}.pdf",
                     dpi=fig.dpi,
                     bbox_inches="tight")
         # plt.show()

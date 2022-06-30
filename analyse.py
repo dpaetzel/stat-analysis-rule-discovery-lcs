@@ -14,7 +14,7 @@ from IPython import embed
 
 pd.options.display.max_rows = 2000
 
-sns.set_style("whitegrid")
+sns.set(style="whitegrid", rc={"lines.linewidth": 1})
 
 # TODO Store via PGF backend with nicer LaTeXy fonts etc.
 # https://jwalton.info/Matplotlib-latex-PGF/
@@ -178,7 +178,8 @@ def calvo(latex, all_variants, check_mcmc):
             sample = pd.DataFrame(
                 sample, columns=model.data_.posterior.weights.algorithm_labels)
             ylabel = "RD method"
-            xlabel = f"Probability of having the lowest {metrics[metric]}"
+            # xlabel = f"Probability of having the lowest {metrics[metric]}"
+            xlabel = f"Probability"
             sample = sample.unstack().reset_index(0).rename(columns={
                 "level_0": ylabel,
                 0: xlabel

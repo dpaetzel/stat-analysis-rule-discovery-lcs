@@ -252,7 +252,8 @@ def ttest(latex):
             xlabel = (
                 f"{metrics[metric]}({cand2}) - {metrics[metric]}({cand1})"
                 if metrics[metric] == "MSE" else
-                f"{metrics[metric]}({cand2})\n- {metrics[metric]}({cand1})")
+                (f"{metrics[metric].capitalize()}({cand2})\n- "
+                 f"{metrics[metric].capitalize()}({cand1})"))
             ylabel = "Density"
             data = pd.DataFrame({xlabel: x, ylabel: y})
 

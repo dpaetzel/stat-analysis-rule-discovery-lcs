@@ -22,7 +22,6 @@ sns.set_theme(style="whitegrid",
               font_scale=0.8,
               rc={
                   "lines.linewidth": 1,
-                  "text.usetex": True,
                   "pdf.fonttype": 42,
                   "ps.fonttype": 42
               })

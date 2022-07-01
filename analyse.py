@@ -243,6 +243,7 @@ def ttest(latex):
     hdis = {}
     for metric in metrics:
         hdis[metrics[metric]] = {}
+        probs = {}
 
         print(f"# {metrics[metric]}")
         print()
@@ -323,11 +324,43 @@ def ttest(latex):
 
             ax[i].set_ylim(top=1.2 * max(y))
 
-            print(f"## {task} ({tasks[task]})")
-            print()
-            print(
-                f"{100 * (1 - 2 * alpha):.1f}% that difference lies in {hdi}")
-            print()
+            if metrics[metric] == "model complexity":
+                # Compute rope for this task.
+
+                # Remove RS runs.
+                d_ = df[metric].unstack("algorithm")[[
+                    alg for alg in algorithms if alg != "RS"
+                ]].stack()
+
+                # Rope is based on std of the other algorithms.
+                stds = d_[task].groupby("algorithm").std()
+                rope = stds.mean()
+                rope = [-rope, rope]
+
+                # Add rope lines and values.
+                ax[i].vlines(x=rope,
+                             ymin=-0.1 * max(y),
+                             ymax=1.2 * max(y),
+                             colors="C2",
+                             linestyles="dotted")
+                ax[i].fill_between(rope,
+                                   0,
+                                   1.2 * max(y),
+                                   alpha=0.33,
+                                   color="C2")
+
+                # Compute probabilities.
+                sample = model.model_.rvs(100000)
+
+                probs[tasks[task]] = {
+                    "p(ES practically higher complexity)":
+                    (sample < rope[0]).sum() / len(sample),
+                    "p(practically equivalent)":
+                    np.logical_and(rope[0] < sample, sample < rope[1]).sum()
+                    / len(sample),
+                    "p(NSLC practically higher complexity)":
+                    (rope[1] < sample).sum() / len(sample),
+                }
 
         ax[i].set_ylabel(ylabel, weight="bold")
         ax[i].set_xlabel(xlabel, weight="bold")
@@ -355,13 +388,18 @@ def ttest(latex):
 
     smart_print(hdis, latex=latex)
 
+    probs = pd.DataFrame(probs).T
+    probs = np.round(probs, 3)
+    probs = 100 * probs
+    smart_print(probs, latex=latex)
+
 
 @cli.command()
 def violins():
     df = load_data()
 
     metric = "test_mean_squared_error"
-    fig, ax = plt.subplots(2, 2, figsize=(textwidth, 2.7 * 2), dpi=72)
+    fig, ax = plt.subplots(2, 2, figsize=(textwidth, 2.7 * 1.3), dpi=72)
 
     xlabel = "RD method"
     ylabel = "MSE"
@@ -391,12 +429,3 @@ def violins():
 # TODO Consider to try tom, too, here
 if __name__ == "__main__":
     cli()
-
-# DONE Fix algortihm ordering in calvo plots
-# DONE Half width for Calvo
-# DONE Adjust height of diagrams (don't have text on diagram border)
-# DONE Half width for ttest nrules
-# DONE Colour density (slightly less intensely)
-# DONE Maybe Times New Roman font (10 pt is section text)
-# TODO Redo the violin plots
-# TODO Check references in text to violin plots

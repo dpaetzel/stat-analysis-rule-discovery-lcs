@@ -142,7 +142,11 @@ def calvo(latex, all_variants, check_mcmc, small_set):
 
     for metric in metrics:
         # fig, ax = plt.subplots(len(variants), figsize=(linewidth, 2.7), dpi=72)
-        fig, ax = plt.subplots(len(variants), figsize=(textwidth, 2.7), dpi=72)
+        fig, ax = plt.subplots(
+            len(variants),
+            figsize=(textwidth,
+                     2.7 if metrics[metric] == "MSE" else 5 / 7 * 2.7),
+            dpi=72)
         if not all_variants:
             ax = [ax]
         i = -1

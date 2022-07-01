@@ -114,10 +114,9 @@ def cli():
     "--check-mcmc/--no-check-mcmc",
     help="Whether to show plots/tables for rudimentary MCMC sanity checking",
     default=False)
-@click.option(
-    "--small-set/--no-small-set",
-    help="Whether to only analyse ES, NS, NSLC",
-    default=False)
+@click.option("--small-set/--no-small-set",
+              help="Whether to only analyse ES, NS, NSLC",
+              default=False)
 def calvo(latex, all_variants, check_mcmc, small_set):
 
     df = load_data()
@@ -200,7 +199,8 @@ def calvo(latex, all_variants, check_mcmc, small_set):
                 })
                 sample = sample.append(add_prob)
                 add_prob = sample[sample[ylabel] == "ES"][xlabel] + sample[
-                    sample[ylabel] == "NSLC"][xlabel] + sample[sample[ylabel] == "NS"][xlabel]
+                    sample[ylabel] == "NSLC"][xlabel] + sample[sample[ylabel]
+                                                               == "NS"][xlabel]
                 add_prob = pd.DataFrame({
                     ylabel:
                     np.repeat("ES $\wedge$ NSLC $\wedge$ NS", len(add_prob)),
@@ -220,9 +220,10 @@ def calvo(latex, all_variants, check_mcmc, small_set):
             ax[i].set_ylabel(ylabel, weight="bold")
 
         fig.tight_layout()
-        fig.savefig(f"{plotdir}/calvo-{metric}{'' if not small_set else '-small'}.pdf",
-                    dpi=fig.dpi,
-                    bbox_inches="tight")
+        fig.savefig(
+            f"{plotdir}/calvo-{metric}{'' if not small_set else '-small'}.pdf",
+            dpi=fig.dpi,
+            bbox_inches="tight")
         # plt.show()
 
 

@@ -1,13 +1,2 @@
-# Ideas
-
-
-## Weight instances according to their difficulty
-
-
-- ccpp is rather linear
-- eec is linear but higher-dimensional
-- others much harder
-
-
-However: How to choose weights? Better: Analyse all and add leave-one-out
-analysis if need be.
+Statistical analysis for the 2022 paper *Approaches for Rule Discovery in a
+Learning Classifier System* by Heider et al.
